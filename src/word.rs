@@ -8,76 +8,10 @@ use halo2::{
 use pasta_curves::pallas;
 
 #[derive(Clone, Debug, Copy, Default)]
-pub struct Word(u32);
-
-impl Word {
-    fn new(x: u32) -> Self {
-        return Word(x) 
-    }
-
-    fn decompose_4(&self) -> [u8; 4] {
-        self.to_le_bytes()
-    }
-
-    fn compose(chunks: [u8; 4]) -> Self {
-        return Word(u32::from_le_bytes(chunks))
-    }
-}
-
-impl std::ops::Deref for Word {
-    type Target = u32;
-
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
-}
-
-#[derive(Clone, Debug)]
-pub struct AssignedWord(AssignedCell<Word, pallas::Base>);
-
-impl AssignedWord {
-    fn new(assigned_cell: AssignedCell<Word, pallas::Base>) -> Self {
-        AssignedWord(assigned_cell)
-    }
-
-    fn value_word(&self) -> Option<u32> {
-        self.0.value().map(|v| (*v).0)
-    }
-}
-
-impl From<&Word> for Assigned<pallas::Base> {
-    fn from(word: &Word) -> Assigned<pallas::Base> {
-        pallas::Base::from(word.0 as u64).into()
-    }
-}
-
-
-impl AssignedWord {
-    fn assign_word(
-        mut layouter: impl Layouter<pallas::Base>,
-        column: Column<Advice>,
-        value: Option<Word>,
-    ) -> Result<AssignedWord, Error> {
-        layouter.assign_region(
-            || "witness word",
-            |mut region| {
-                let assigned = region.assign_advice(
-                    || "witness",
-                    column,
-                    0,
-                    || value.ok_or(Error::Synthesis),
-                )?;
-                Ok(AssignedWord::new(assigned))
-            },
-        )
-    }
-}
-
-#[derive(Clone, Debug, Copy, Default)]
 pub struct Chunk(u8);
 
 impl Chunk {
-    fn new(x: u8) -> Self {
+    pub fn new(x: u8) -> Self {
         return Chunk(x) 
     }
 }
@@ -94,12 +28,12 @@ impl std::ops::Deref for Chunk {
 pub struct AssignedChunk(AssignedCell<Chunk, pallas::Base>);
 
 impl AssignedChunk {
-    fn new(assigned_cell: AssignedCell<Chunk, pallas::Base>) -> Self {
+    pub fn new(assigned_cell: AssignedCell<Chunk, pallas::Base>) -> Self {
         AssignedChunk(assigned_cell)
     }
 
-    fn value_word(&self) -> Option<u8> {
-        self.0.value().map(|v| (*v).0)
+    pub fn value_chunk(&self) -> Option<Chunk> {
+        self.0.value().map(|v| *v)
     }
 }
 
@@ -130,6 +64,98 @@ impl AssignedChunk {
         )
     }
 }
+
+
+#[derive(Clone, Debug, Copy, Default)]
+pub struct Word(u32);
+
+impl Word {
+    pub fn new(x: u32) -> Self {
+        return Word(x) 
+    }
+
+    pub fn decompose_4(&self) -> [Chunk; 4] {
+        let bytes = self.to_le_bytes();
+        bytes.map(|byte| Chunk(byte))
+    }
+
+    pub fn compose(chunks: [u8; 4]) -> Self {
+        return Word(u32::from_le_bytes(chunks))
+    }
+}
+
+impl std::ops::Deref for Word {
+    type Target = u32;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+#[derive(Clone, Debug)]
+pub struct AssignedWord(AssignedCell<Word, pallas::Base>);
+
+impl AssignedWord {
+    pub fn new(assigned_cell: AssignedCell<Word, pallas::Base>) -> Self {
+        AssignedWord(assigned_cell)
+    }
+
+    pub fn value_word(&self) -> Option<Word> {
+        self.0.value().map(|word| *word)
+    }
+
+    // pub fn decompose_4(&self) -> [Option<Chunk>; 4] {
+    //     self.0.value().map(|word| )
+    // }
+}
+
+impl From<&Word> for Assigned<pallas::Base> {
+    fn from(word: &Word) -> Assigned<pallas::Base> {
+        pallas::Base::from(word.0 as u64).into()
+    }
+}
+
+
+impl AssignedWord {
+    pub fn assign_word(
+        mut layouter: impl Layouter<pallas::Base>,
+        column: Column<Advice>,
+        value: Option<Word>,
+    ) -> Result<AssignedWord, Error> {
+        layouter.assign_region(
+            || "witness word",
+            |mut region| {
+                let assigned = region.assign_advice(
+                    || "witness",
+                    column,
+                    0,
+                    || value.ok_or(Error::Synthesis),
+                )?;
+                Ok(AssignedWord::new(assigned))
+            },
+        )
+    }
+
+    pub fn copy<A, AR>(
+        &self,
+        annotation: A,
+        region: &mut Region<'_, pallas::Base>,
+        column: Column<Advice>,
+        offset: usize,
+    ) -> Result<Self, Error>
+    where
+        A: Fn() -> AR,
+        AR: Into<String>,
+    {
+        let assigned_cell = &self.0;
+        let copied = assigned_cell.copy_advice(annotation, region, column, offset)?;
+        Ok(AssignedWord::new(copied))
+    }
+}
+
+// impl<F: FieldExt> AssignedCell<F>
+// {
+// }
 
 
 #[cfg(test)]
@@ -200,7 +226,6 @@ mod test {
             let config = config.clone();
 
             let assigned = AssignedWord::assign_word(layouter.namespace(|| "witness value"), config.advice[0], self.value).unwrap();
-            println!("{:?}", assigned.value_word());
             Ok(())
         }
     }
