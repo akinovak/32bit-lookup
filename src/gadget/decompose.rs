@@ -1,20 +1,12 @@
-/* 
-This chip should determine which value should be left and which right input to hasher
-based on leaf position at current level
-
-This chip considers that left value is already witnessed:
-first layer -> leaf is witnessed as private input
-ith layer -> left inter root is witnessed after hash layer
-*/
 use halo2::{
     circuit::{Chip, Layouter},
-    plonk::{Advice, Column, ConstraintSystem, Error, Selector, Expression},
+    plonk::{Advice, Column, ConstraintSystem, Error, Selector},
     arithmetic::FieldExt,
     poly::Rotation
 };
-use std::{array, marker::PhantomData};
+use std::{marker::PhantomData};
 use pasta_curves::pallas;
-use crate::word::{AssignedWord, AssignedChunk, Word, Chunk};
+use crate::word::{AssignedWord, AssignedChunk};
 
 use crate::gates::{Gate};
 
@@ -116,9 +108,6 @@ impl<F: FieldExt> DecomposeInstruction<F> for DecomposeChip<F> {
                 let mut row_offset = 0;
                 config.q_decompose.enable(&mut region, 0)?;
 
-                //make sure that root from previous level is equal to left
-                // let left = pair.0.copy(|| "copy left", &mut region, config.left, row_offset)?;
-
                 let value = {
                     let assigned = region.assign_advice(
                         || "witness right",
@@ -137,7 +126,6 @@ impl<F: FieldExt> DecomposeInstruction<F> for DecomposeChip<F> {
                         config.advice[1],
                         row_offset,
                         || decomposed.map(|decomposed| decomposed[0]).ok_or(Error::Synthesis),
-                        // || value.value_word().ok_or(Error::Synthesis),
                     )?;
 
                     AssignedChunk::new(assigned)
@@ -161,7 +149,6 @@ impl<F: FieldExt> DecomposeInstruction<F> for DecomposeChip<F> {
                         config.advice[0],
                         row_offset,
                         || decomposed.map(|decomposed| decomposed[2]).ok_or(Error::Synthesis),
-                        // || value.value_word().ok_or(Error::Synthesis),
 
                     )?;
 
@@ -174,7 +161,6 @@ impl<F: FieldExt> DecomposeInstruction<F> for DecomposeChip<F> {
                         config.advice[1],
                         row_offset,
                         || decomposed.map(|decomposed| decomposed[3]).ok_or(Error::Synthesis),
-                        // || value.value_word().ok_or(Error::Synthesis),
                     )?;
 
                     AssignedChunk::new(assigned)
@@ -190,7 +176,6 @@ impl<F: FieldExt> DecomposeInstruction<F> for DecomposeChip<F> {
 mod test {
     use halo2::{
         dev::MockProver,
-        pasta::Fp,
         circuit::{Layouter, SimpleFloorPlanner},
         plonk::{Advice, Instance, Column, ConstraintSystem, Error},
         plonk,
@@ -268,7 +253,7 @@ mod test {
         let k = 4;
     
         let circuit = Circuit {
-            a: Some(Word::new(5))
+            a: Some(Word::new(301931321u32))
         };
 
         let public_inputs = vec![];
