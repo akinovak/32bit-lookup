@@ -14,14 +14,14 @@ const XOR_BITS: usize = 8;
 
 /// An input word into a lookup, containing (tag, dense, spread)
 #[derive(Copy, Clone, Debug)]
-pub(super) struct ChunkWord {
+pub  struct ChunkWord {
     pub x: u8,
     pub y: u8,
     pub z: u8,
 }
 
 impl ChunkWord {
-    pub(super) fn new(x: u8, y: u8, z: u8) -> Self {
+    pub fn new(x: u8, y: u8, z: u8) -> Self {
         ChunkWord {
             x,
             y,
@@ -32,34 +32,34 @@ impl ChunkWord {
 
 /// A variable stored in advice columns corresponding to a row of [`SpreadTableConfig`].
 #[derive(Clone, Debug)]
-pub(super) struct ChunkVar {
+pub struct ChunkVar {
     pub x: Option<Chunk>,
     pub y: Option<Chunk>,
     pub z: Option<Chunk>,
 }
 
 #[derive(Clone, Debug)]
-pub(super) struct Inputs {
-    pub(super) x: Column<Advice>,
-    pub(super) y: Column<Advice>,
-    pub(super) z: Column<Advice>,
+pub struct Inputs {
+    pub x: Column<Advice>,
+    pub y: Column<Advice>,
+    pub z: Column<Advice>,
 }
 
 #[derive(Clone, Debug)]
-pub(super) struct Table {
-    pub(super) x: TableColumn,
-    pub(super) y: TableColumn,
-    pub(super) z: TableColumn,
+pub struct Table {
+    pub x: TableColumn,
+    pub y: TableColumn,
+    pub z: TableColumn,
 }
 
 #[derive(Clone, Debug)]
-pub(super) struct TableConfig {
+pub struct TableConfig {
     pub input: Inputs,
     pub table: Table,
 }
 
 #[derive(Clone, Debug)]
-pub(super) struct TableChip<F: FieldExt> {
+pub struct TableChip<F: FieldExt> {
     config: TableConfig,
     _marker: PhantomData<F>,
 }
